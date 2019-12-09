@@ -1,54 +1,257 @@
+let characters = [
+    "A",
+    "a",
+    "B",
+    "b",
+    "C",
+    "c",
+    "D",
+    "d",
+    "E",
+    "e",
+    "F",
+    "f",
+    "G",
+    "g",
+    "H",
+    "h",
+    "I",
+    "i",
+    "J",
+    "j",
+    "K",
+    "k",
+    "L",
+    "l",
+    "M",
+    "m",
+    "N",
+    "n",
+    "O",
+    "o",
+    "P",
+    "p",
+    "Q",
+    "q",
+    "R",
+    "r",
+    "S",
+    "s",
+    "T",
+    "t",
+    "U",
+    "u",
+    "V",
+    "v",
+    "W",
+    "w",
+    "X",
+    "x",
+    "Y",
+    "y",
+    "Z",
+    "z",
+    ".",
+    ",",
+    "-",
+    ";",
+];
+
+let charactersBanana = ["B", "A", "N"];
 const models = require("../database/models");
 
+const sequelize = require("sequelize");
+
 const { Client } = require("@elastic/elasticsearch");
-const ecl = new Client({ node: "http://localhost:9200" });
+const ecl = new Client({ node: process.env.ELASTIC_HOST });
+
+const ES_INDEX_POST = "post";
+
+const initialSetup = async (req, res) => {
+    try {
+        let index = await ecl.indices.create({
+            index: ES_INDEX_POST,
+        });
+
+        res.send({ ok: true, message: "Indexes created" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+function msToHMS(ms) {
+    return new Date(ms).toISOString().slice(11, -1);
+}
+
+const postGenerator = async (req, res) => {
+    let AMOUNT_OF_POSTS = 5000;
+    let AMOUNT_OF_WORDS = 30;
+    let WORD_LENGTH = 6;
+
+    console.log("-------------- Preparing ----------------");
+
+    try {
+        console.log("Deleting index from ecl ...");
+
+        let del_index = await ecl.indices.delete({
+            index: ES_INDEX_POST,
+        });
+
+        console.log(" Index deleted.");
+    } catch (e) {}
+
+    try {
+        console.log("Creating new index on ecl ...");
+
+        let new_index = await ecl.indices.create({
+            index: ES_INDEX_POST,
+        });
+        console.log(" Index created.");
+    } catch (e) {}
+
+    try {
+        console.log("Deleting all posts from pg ...");
+
+        const deleted = await models.Post.destroy({
+            where: {},
+        });
+        console.log(" Deleted", deleted, "rows from pg");
+        console.log();
+    } catch (e) {
+    } finally {
+    }
+
+    console.log("-------------- Generating ----------------");
+
+    let startDate = new Date();
+    let totalTimeNeeded;
+    try {
+        for (var i = 0; i < AMOUNT_OF_POSTS; i++) {
+            let content = "";
+            let title =
+                charactersBanana[
+                    Math.floor(Math.random() * charactersBanana.length)
+                ];
+
+            for (var j = 0; j < AMOUNT_OF_WORDS; j++) {
+                for (var k = 0; k < WORD_LENGTH; k++) {
+                    content +=
+                        charactersBanana[
+                            Math.floor(Math.random() * charactersBanana.length)
+                        ];
+                }
+                content += " ";
+            }
+
+            const post = await models.Post.create({
+                title,
+                content,
+                userId: 1,
+            });
+            // index already exists
+            let nekaj = await ecl.index({
+                index: ES_INDEX_POST,
+                // type: '_doc', // uncomment this line if you are using {es} ≤ 6
+                body: post.dataValues,
+            });
+
+            if (i % 100 === 0 && i !== 0) {
+                console.log("... generated", i, "posts ...");
+            }
+        }
+
+        console.log(" Generated", i, "posts in total.");
+
+        console.log("Refreshing indices ...");
+        await client.indices.refresh({ index: "game-of-thrones" });
+    } catch (e) {
+    } finally {
+        totalTimeNeeded = msToHMS(new Date() - startDate);
+
+        res.send({
+            ok: true,
+            message: "Posts deleted and regenerated",
+            data: {
+                totalTimeNeeded: totalTimeNeeded,
+                totalAmountOfCreatedPost: AMOUNT_OF_POSTS,
+            },
+        });
+    }
+};
 
 const createPost = async (req, res) => {
     try {
-        console.log(req.body);
         const post = await models.Post.create(req.body);
-        console.log(post);
-        return res.status(201).json({
-            post,
+        // index already exists
+        let nekaj = await ecl.index({
+            index: ES_INDEX_POST,
+            // type: '_doc', // uncomment this line if you are using {es} ≤ 6
+            body: post.dataValues,
         });
+
+        res.send(nekaj);
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
 };
 
 const getAllPosts = async (req, res) => {
+    let QUERY_STRING = "banana";
     try {
-        // const result = await ecl.search({
-        //     index: "my-index",
-        //     body: { foo: "bar" },
-        // });
-        //
-        // // callback API
-        // ecl.search(
-        //     {
-        //         index: "my-index",
-        //         body: { foo: "bar" },
-        //     },
-        //     (err, result) => {
-        //         if (err) console.log(err);
-        //
-        //         console.log("prigobil sel retulzeaze");
-        //     }
-        // );
-
-        const posts = await models.Post.findAll({
-            include: [
-                {
-                    model: models.Comment,
-                    as: "comments",
+        let dateNow = new Date();
+        let result = await ecl.search({
+            index: ES_INDEX_POST,
+            body: {
+                query: {
+                    match: {
+                        content: QUERY_STRING,
+                    },
                 },
-                {
-                    model: models.User,
-                    as: "author",
-                },
-            ],
+            },
         });
-        return res.status(200).json({ posts });
+
+        let totalTimeNeededMS = new Date() - dateNow;
+        let totalTimeNeededFULL = msToHMS(totalTimeNeededMS);
+
+        let dateNow2 = new Date();
+        const posts = await models.Post.findAll({
+            where: {
+                content: sequelize.where(
+                    sequelize.fn("LOWER", sequelize.col("content")),
+                    "LIKE",
+                    "%" + QUERY_STRING + "%"
+                ),
+            },
+        });
+
+        let totalTimeNeededMS2 = new Date() - dateNow2;
+        let totalTimeNeededFULL2 = msToHMS(totalTimeNeededMS2);
+
+        return res.status(200).json({
+            ok: true,
+            message: "Queried for " + QUERY_STRING + " in posts content.",
+            data: {
+                queriedWord: QUERY_STRING,
+                elasticsearch: {
+                    totalTimeNeeded: totalTimeNeededFULL,
+                    totalPosts: result.body.hits.total.value,
+                },
+                postgres: {
+                    totalTimeNeeded: totalTimeNeededFULL2,
+                    totalPosts: posts.length,
+                },
+                comparison: {
+                    winner:
+                        totalTimeNeededMS < totalTimeNeededMS2
+                            ? "elasticsearch"
+                            : "postgres",
+                    fasterBy:
+                        totalTimeNeededMS < totalTimeNeededMS2
+                            ? totalTimeNeededMS2 / totalTimeNeededMS
+                            : totalTimeNeededMS / totalTimeNeededMS2,
+                },
+            },
+        });
     } catch (error) {
         return res.status(500).send(error.message);
     }
@@ -126,4 +329,5 @@ module.exports = {
     getPostById,
     updatePost,
     deletePost,
+    postGenerator,
 };

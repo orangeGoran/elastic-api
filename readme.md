@@ -1,4 +1,4 @@
-# TESTING ELASTICSEARCH
+# Using elasticsearch to make querying faster
 
 Just a simple project that compare speed efficiency of search algorithm between elasticsearch and postgres.
 
@@ -122,11 +122,9 @@ Now visit [link](http://localhost:9000/api/posts) again and check for the winner
 -   [More of docker](https://medium.com/@wkrzywiec/database-in-a-docker-container-how-to-start-and-whats-it-about-5e3ceea77e50)
 -   [Setup sequalize with postgress](https://dev.to/nedsoft/getting-started-with-sequelize-and-postgres-emp)
 
-
 ## Authors
 
-* **Goran Tubic** - *Initial work* - [orangeGoran](https://github.com/orangeGoran)
-
+-   **Goran Tubic** - _Initial work_ - [orangeGoran](https://github.com/orangeGoran)
 
 ## License
 

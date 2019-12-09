@@ -58,6 +58,8 @@ let characters = [
 ];
 
 let charactersBanana = ["B", "A", "N"];
+
+
 const models = require("../database/models");
 
 const sequelize = require("sequelize");
@@ -67,27 +69,11 @@ const ecl = new Client({ node: process.env.ELASTIC_HOST });
 
 const ES_INDEX_POST = "post";
 
-const initialSetup = async (req, res) => {
-    try {
-        let index = await ecl.indices.create({
-            index: ES_INDEX_POST,
-        });
-
-        res.send({ ok: true, message: "Indexes created" });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-};
-
 function msToHMS(ms) {
     return new Date(ms).toISOString().slice(11, -1);
 }
 
 const postGenerator = async (req, res) => {
-    let AMOUNT_OF_POSTS = 5000;
-    let AMOUNT_OF_WORDS = 30;
-    let WORD_LENGTH = 6;
-
     console.log("-------------- Preparing ----------------");
 
     try {
@@ -126,15 +112,15 @@ const postGenerator = async (req, res) => {
     let startDate = new Date();
     let totalTimeNeeded;
     try {
-        for (var i = 0; i < AMOUNT_OF_POSTS; i++) {
+        for (var i = 0; i < process.env.AMOUNT_OF_POSTS; i++) {
             let content = "";
             let title =
                 charactersBanana[
                     Math.floor(Math.random() * charactersBanana.length)
                 ];
 
-            for (var j = 0; j < AMOUNT_OF_WORDS; j++) {
-                for (var k = 0; k < WORD_LENGTH; k++) {
+            for (var j = 0; j < process.env.AMOUNT_OF_WORDS; j++) {
+                for (var k = 0; k < process.env.WORD_LENGTH; k++) {
                     content +=
                         charactersBanana[
                             Math.floor(Math.random() * charactersBanana.length)
@@ -173,7 +159,7 @@ const postGenerator = async (req, res) => {
             message: "Posts deleted and regenerated",
             data: {
                 totalTimeNeeded: totalTimeNeeded,
-                totalAmountOfCreatedPost: AMOUNT_OF_POSTS,
+                totalAmountOfCreatedPost: process.env.AMOUNT_OF_POSTS,
             },
         });
     }
@@ -196,7 +182,7 @@ const createPost = async (req, res) => {
 };
 
 const getAllPosts = async (req, res) => {
-    let QUERY_STRING = "banana";
+
     try {
         let dateNow = new Date();
         let result = await ecl.search({
@@ -204,7 +190,7 @@ const getAllPosts = async (req, res) => {
             body: {
                 query: {
                     match: {
-                        content: QUERY_STRING,
+                        content: process.env.QUERY_STRING,
                     },
                 },
             },
@@ -219,7 +205,7 @@ const getAllPosts = async (req, res) => {
                 content: sequelize.where(
                     sequelize.fn("LOWER", sequelize.col("content")),
                     "LIKE",
-                    "%" + QUERY_STRING + "%"
+                    "%" + process.env.QUERY_STRING + "%"
                 ),
             },
         });
@@ -229,9 +215,9 @@ const getAllPosts = async (req, res) => {
 
         return res.status(200).json({
             ok: true,
-            message: "Queried for " + QUERY_STRING + " in posts content.",
+            message: "Queried for " + process.env.QUERY_STRING + " in posts content.",
             data: {
-                queriedWord: QUERY_STRING,
+                queriedWord: process.env.QUERY_STRING,
                 elasticsearch: {
                     totalTimeNeeded: totalTimeNeededFULL,
                     totalPosts: result.body.hits.total.value,

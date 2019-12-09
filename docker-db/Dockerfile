@@ -1,4 +1,3 @@
 FROM postgres
 ENV POSTGRES_PASSWORD 12qw34er
-ENV POSTGRES_DB testdb 
-COPY init.sql /docker-entrypoint-initdb.d/
+ENV POSTGRES_DB testdb

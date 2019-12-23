@@ -4,7 +4,7 @@ Just a simple project that compare speed efficiency of search algorithm between 
 
 ## Getting started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
 
@@ -19,10 +19,16 @@ What things you need to install the software and how to install them
 
 A step by step series of examples that tell you how to get a development env running
 
-Run elasticsearch server
+Setup elasticsearch server
 
 ```
 Follow steps from https://www.elastic.co/downloads/elasticsearch
+```
+
+Run elasticsearch server
+
+```
+./bin/elasticsearch
 ```
 
 Download project source code

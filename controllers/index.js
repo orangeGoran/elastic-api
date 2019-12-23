@@ -59,7 +59,6 @@ let characters = [
 
 let charactersBanana = ["B", "A", "N"];
 
-
 const models = require("../database/models");
 
 const sequelize = require("sequelize");
@@ -182,7 +181,6 @@ const createPost = async (req, res) => {
 };
 
 const getAllPosts = async (req, res) => {
-
     try {
         let dateNow = new Date();
         let result = await ecl.search({
@@ -215,7 +213,10 @@ const getAllPosts = async (req, res) => {
 
         return res.status(200).json({
             ok: true,
-            message: "Queried for " + process.env.QUERY_STRING + " in posts content.",
+            message:
+                "Queried for " +
+                process.env.QUERY_STRING +
+                " in posts content.",
             data: {
                 queriedWord: process.env.QUERY_STRING,
                 elasticsearch: {

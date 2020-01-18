@@ -72,6 +72,63 @@ function msToHMS(ms) {
     return new Date(ms).toISOString().slice(11, -1);
 }
 
+const generateMorePosts = async (req, res) => {
+    let startDate = new Date();
+    let totalTimeNeeded;
+    try {
+        for (var i = 0; i < process.env.GENERATE_MORE_POSTS; i++) {
+            let content = "";
+            let title =
+                charactersBanana[
+                    Math.floor(Math.random() * charactersBanana.length)
+                ];
+
+            for (var j = 0; j < process.env.AMOUNT_OF_WORDS; j++) {
+                for (var k = 0; k < process.env.WORD_LENGTH; k++) {
+                    content +=
+                        charactersBanana[
+                            Math.floor(Math.random() * charactersBanana.length)
+                        ];
+                }
+                content += " ";
+            }
+
+            const post = await models.Post.create({
+                title,
+                content,
+                userId: 1,
+            });
+            // index already exists
+            let nekaj = await ecl.index({
+                index: ES_INDEX_POST,
+                // type: '_doc', // uncomment this line if you are using {es} ≤ 6
+                body: post.dataValues,
+            });
+
+            if (i % 100 === 0 && i !== 0) {
+                console.log("... generated", i, "posts ...");
+            }
+        }
+
+        console.log(" Generated", i, "posts in total.");
+
+        console.log("Refreshing indices ...");
+        await client.indices.refresh({ index: ES_INDEX_POST });
+    } catch (e) {
+    } finally {
+        totalTimeNeeded = msToHMS(new Date() - startDate);
+
+        res.send({
+            ok: true,
+            message: "Posts deleted and regenerated",
+            data: {
+                totalTimeNeeded: totalTimeNeeded,
+                totalAmountOfCreatedPost: process.env.GENERATE_MORE_POSTS,
+            },
+        });
+    }
+};
+
 const postGenerator = async (req, res) => {
     console.log("-------------- Preparing ----------------");
 
@@ -148,7 +205,7 @@ const postGenerator = async (req, res) => {
         console.log(" Generated", i, "posts in total.");
 
         console.log("Refreshing indices ...");
-        await client.indices.refresh({ index: "game-of-thrones" });
+        await client.indices.refresh({ index: ES_INDEX_POST });
     } catch (e) {
     } finally {
         totalTimeNeeded = msToHMS(new Date() - startDate);
@@ -317,4 +374,5 @@ module.exports = {
     updatePost,
     deletePost,
     postGenerator,
+    generateMorePosts,
 };

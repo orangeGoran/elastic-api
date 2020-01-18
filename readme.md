@@ -1,6 +1,6 @@
-# Using elasticsearch to make querying faster
+# Using Elasticsearch to make querying faster
 
-Just a simple project that compare speed efficiency of search algorithm between elasticsearch and postgres.
+Just a simple project that compare speed efficiency of search algorithm between Elasticsearch (cluster and single endpoint) and postgres (just single endpoint).
 
 ## Getting started
 
@@ -13,25 +13,52 @@ What things you need to install the software and how to install them
 -   NPM via [link](https://www.npmjs.com/)
 -   docker via [link](https://docs.docker.com/install/)
 -   git via [link](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
--   elasticsearch via [link](https://www.elastic.co/downloads/elasticsearch)
+-   Elasticsearch via [link](https://www.elastic.co/downloads/Elasticsearch)
 
 ### Installing
 
+#### 1) Getting Elasticsearch
+
+Here you can decide between using ES cluster or ES single point server.
+
+##### a) ES Cluster
+
+To run ES cluster
+
+```
+cd docker-elastic
+docker-compose up
+```
+
+To test it
+
+```
+curl -X GET "localhost:9200/_cat/nodes?v&pretty"
+```
+
+To stop it
+
+```
+docker-compose down
+```
+
+##### b) ES single point server
+
 A step by step series of examples that tell you how to get a development env running
 
-Setup elasticsearch server
+Setup Elasticsearch server (only if you haven't installed run ES cluster from previous section)
 
 ```
-Follow steps from https://www.elastic.co/downloads/elasticsearch
+Follow steps from https://www.elastic.co/downloads/Elasticsearch
 ```
 
-Run elasticsearch server
+Run Elasticsearch server (if you haven't run it as cluster already)
 
 ```
-./bin/elasticsearch
+./bin/Elasticsearch
 ```
 
-Download project source code
+#### 2) Downloading project source code
 
 ```
 git clone https://github.com/orangeGoran/elastic-api.git
@@ -39,13 +66,15 @@ cd elastic-api
 npm install
 ```
 
-Create environment variables
+#### 3) Creating environment variables
 
 ```
 cp ./.env.example ./.env
 ```
 
-Setup docker which will runs the postgres database for us
+#### 4) Setupping docker for postgres database (for simple comparison)
+
+Docker will run the postgres database for us. We are using postgres in order to compare the speed efficiency between postgres and Elasticsearch. Note that docker runs on single point (not distributed).
 
 ```
 cd ./docker-db
@@ -53,6 +82,8 @@ docker build -t school-dbms-pg .
 docker run -d --name school-dbms-pg -p 5555:5432 school-dbms-pg
 docker container start school-dbms-pg
 ```
+
+##### a) Filling postgres database
 
 Install sequalize globally and create database
 
@@ -62,7 +93,7 @@ sudo npm install sequelize-cli -g
 sequelize db:migrate
 ```
 
-Run server
+#### 5) Running our server
 
 ```
 cd ./
@@ -120,7 +151,21 @@ It should respond with something like json below. In this example it took around
 }
 ```
 
-Now visit [link](http://localhost:9000/api/posts) again and check for the winner. Try changing .env last three fields for different results.
+If you want to generate more data then visit
+
+```
+http://localhost:9000/api/generateMore
+```
+
+Now visit [link](http://localhost:9000/api/posts) again and check for the winner. Try changing .env last three values to search for different data, recreate different amount of posts or to generate more posts. In order to see the changes please restart server by typing `rs` in console.
+
+```
+...
+QUERY_STRING=banana
+AMOUNT_OF_POSTS=5000
+GENERATE_MORE_POSTS=500
+...
+```
 
 ## Additional links
 
